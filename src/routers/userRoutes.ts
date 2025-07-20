@@ -7,7 +7,8 @@ const {url, method} = req;
 
         const match = url?.match(/\/api\/users\/(\d+)/);
         const userId = match ? parseInt(match[1], 10) : null;
-        const baseUrl = userId !== null ? "api/users/:id" : url?.replace(/^\/+/, "") || "";
+        const baseUrl = userId !== null ? "api/users/:id" : "api/users"
+
 
 switch (`${baseUrl}` + `${method}`) {
     case "api/users" + "POST" : {

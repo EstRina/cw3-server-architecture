@@ -109,17 +109,17 @@ export class UserController {
     }
 
 
-    async getLogs(req: IncomingMessage, res: ServerResponse) {
-        try {
-            const logs = myLogger.getLogArray();
-            myLogger.log(`Retrieved logs: ${logs.length} entries`);
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify(logs));
-        } catch (error) {
-            myLogger.log(`Error retrieving logs: ${error}`);
-            res.writeHead(500, { "Content-Type": "text/plain" });
-            res.end("Internal server error");
-        }
-    }
+    // async getLogs(req: IncomingMessage, res: ServerResponse) {
+    //     try {
+    //         const logs = myLogger.getLogArray();
+    //         myLogger.log(`Retrieved logs: ${logs.length} entries`);
+    //         res.writeHead(200, { "Content-Type": "application/json" });
+    //         res.end(JSON.stringify(logs));
+    //     } catch (error) {
+    //         myLogger.log(`Error retrieving logs: ${error}`);
+    //         res.writeHead(500, { "Content-Type": "text/plain" });
+    //         res.end("Internal server error");
+    //     }
+    // }
 
 }
