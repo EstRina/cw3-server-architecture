@@ -1,0 +1,3 @@
+Changed createReadStream and createWriteStream to readFileSync and writeFileSync
+Added file existence check
+Added handling of empty files
