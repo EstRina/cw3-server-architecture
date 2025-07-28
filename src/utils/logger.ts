@@ -1,4 +1,5 @@
 import {EventEmitter} from "node:events";
+import * as fs from "node:fs";
 
 class Logger extends EventEmitter {
     private logArray: Array<{ date: string, message: string }> = [];
@@ -7,6 +8,9 @@ class Logger extends EventEmitter {
     }
     save(message: string): void {
         this.emit('saved', message);
+    }
+    saveToFile(message: string): void {
+        this.emit('saved to file', message);
     }
     addLogToArray(message:string) {
         this.logArray.push({date: new Date().toISOString(), message});
@@ -27,6 +31,11 @@ myLogger.on('saved', (message: string) => {
     myLogger.addLogToArray(message);
 })
 
+myLogger.on('to_file', (message: string) => {
+    myLogger.addLogToArray(message);
+    const fileName = 'log.txt';
+    fs.writeFileSync(fileName, JSON.stringify(myLogger.getLogArray()));
+})
 
 
 

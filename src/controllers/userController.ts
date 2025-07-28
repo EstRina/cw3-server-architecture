@@ -1,4 +1,4 @@
-import {UserService} from "../service/userService.ts";
+import {UserService} from "../service/UserService.ts";
 import {parseBody} from "../utils/tools.ts";
 import {IncomingMessage, ServerResponse} from "node:http";
 import {User} from "../model/userTypes.ts";
