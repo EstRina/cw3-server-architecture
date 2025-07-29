@@ -3,6 +3,7 @@ import {User} from "../model/userTypes.ts";
 import {myLogger} from "../utils/logger.ts";
 import {UserFilePersistenceService} from "./UserFilePersistenceService.ts";
 import * as fs from "node:fs";
+import {createReadStream, createWriteStream} from "node:fs";
 
 
 export class UserServiceEmbeddedImpl implements UserService, UserFilePersistenceService{
@@ -71,80 +72,102 @@ export class UserServiceEmbeddedImpl implements UserService, UserFilePersistence
     }
 
     // restoreDataFromFile(): string {
-    //     let result = ""
-    //     this.rs.on('data', (chunk) => {
-    //         if(chunk) {
-    //             result += chunk.toString();
+    //     try {
+    //         if (fs.existsSync('data.txt')) {
+    //             const data = fs.readFileSync('data.txt', 'utf8');
+    //             if (data.trim()) {
+    //                 this.users = JSON.parse(data);
+    //                 myLogger.log("Data was restored");
+    //                 myLogger.save("Data was restored");
+    //             } else {
+    //                 this.users = [{id:123, userName: "Panikovsky"}];
+    //             }
     //         } else {
-    //             result = "[]";
+    //             this.users = [{id:123, userName: "Panikovsky"}];
+    //             myLogger.log("File to restore not found");
     //         }
-    //     })
-    //     this.rs.on('end', () => {
-    //         if(result){
-    //             this.users = JSON.parse(result);
-    //             myLogger.log("Data was restored");
-    //             myLogger.save("Data was restored");
-    //             this.rs.destroy();
-    //         } else {
-    //             this.users = [{id:123, userName: "Panikovsky"}]
-    //         }
-    //     })
-    //     this.rs.on('error', () => {
-    //         this.users = [{id:2, userName: "Bender"}]
-    //         myLogger.log("File to restore not found")
-    //     })
+    //     } catch (error) {
+    //         this.users = [{id:2, userName: "Bender"}];
+    //         myLogger.log("Error restoring data from file");
+    //     }
     //     return "Ok";
     // }
     //
     // saveDataToFile(): string {
-    //     const ws = fs.createWriteStream('data.txt', {flags: "r+"})
-    //     myLogger.log("Write stream created")
-    //     const data = JSON.stringify(this.users);
-    //     myLogger.log(data)
-    //     ws.write(data);
-    //     ws.on('end', () => {
+    //     try {
+    //         const data = JSON.stringify(this.users);
+    //         fs.writeFileSync('data.txt', data, 'utf8');
     //         myLogger.log("Data was saved");
     //         myLogger.save("Data was saved");
-    //         ws.destroy();
-    //     })
-    //     ws.on('error', () => {
-    //         myLogger.log("Error saving data.");
-    //     })
+    //     } catch (error) {
+    //         myLogger.log("Error saving data to file");
+    //     }
     //     return "Ok";
     // }
 
-    restoreDataFromFile(): string {
-        try {
-            if (fs.existsSync('data.txt')) {
-                const data = fs.readFileSync('data.txt', 'utf8');
-                if (data.trim()) {
-                    this.users = JSON.parse(data);
-                    myLogger.log("Data was restored");
-                    myLogger.save("Data was restored");
-                } else {
-                    this.users = [{id:123, userName: "Panikovsky"}];
+    async restoreDataFromFile(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const rs = createReadStream("data.txt", { encoding: "utf8", highWaterMark: 24 });
+            let result = "";
+            myLogger.log("Reading data.txt for restore");
+
+            rs.on("data", (chunk) => {
+                result += chunk.toString();
+                myLogger.log(`Read chunk: ${chunk.toString().slice(0, 50)}...`);
+            });
+
+            rs.on("end", () => {
+                try {
+                    if (result.trim()) {
+                        this.users = JSON.parse(result);
+                        myLogger.log(`Data restored: ${this.users.length} users`);
+                        myLogger.save("Data was restored");
+                    } else {
+                        this.users = [{ id: 123, userName: "Panikovsky" }];
+                        myLogger.log("No data in file, initialized default user");
+                    }
+                    rs.destroy();
+                    resolve("Ok");
+                } catch (error) {
+                    this.users = [{ id: 2, userName: "Bender" }];
+                    myLogger.log(`Error parsing data: ${(error as Error).message}`);
+                    rs.destroy();
+                    resolve("Ok");
                 }
-            } else {
-                this.users = [{id:123, userName: "Panikovsky"}];
-                myLogger.log("File to restore not found");
-            }
-        } catch (error) {
-            this.users = [{id:2, userName: "Bender"}];
-            myLogger.log("Error restoring data from file");
-        }
-        return "Ok";
+            });
+
+            rs.on("error", (error) => {
+                this.users = [{ id: 2, userName: "Bender" }];
+                myLogger.log(`Error reading file: ${error.message}`);
+                rs.destroy();
+                resolve("Ok");
+            });
+        });
     }
 
-    saveDataToFile(): string {
-        try {
+    async saveDataToFile(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const ws = createWriteStream("data.txt", { flags: "w" });
+            myLogger.log("Write stream created for data.txt");
             const data = JSON.stringify(this.users);
-            fs.writeFileSync('data.txt', data, 'utf8');
-            myLogger.log("Data was saved");
-            myLogger.save("Data was saved");
-        } catch (error) {
-            myLogger.log("Error saving data to file");
-        }
-        return "Ok";
+            myLogger.log(`Writing data: ${data.slice(0, 50)}...`);
+
+            ws.write(data);
+            ws.end();
+
+            ws.on("finish", () => {
+                myLogger.log("Data was saved");
+                myLogger.save("Data was saved");
+                ws.destroy();
+                resolve("Ok");
+            });
+
+            ws.on("error", (error) => {
+                myLogger.log(`Error saving data: ${error.message}`);
+                ws.destroy();
+                reject(error);
+            });
+        });
     }
 
 }

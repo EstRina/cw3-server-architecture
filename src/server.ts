@@ -5,9 +5,9 @@ import {UserController} from "./controllers/userController.ts";
 import {userRouters} from "./routers/userRoutes.ts";
 import {myLogger} from "./utils/logger.ts";
 
-export const launchServer = (): void => {
+export const launchServer = async () => {
     const userService = new UserServiceEmbeddedImpl();
-    userService.restoreDataFromFile();
+    await userService.restoreDataFromFile();
     const userController:UserController = new UserController(userService);
 
     createServer(async (req, res) => {
@@ -16,8 +16,8 @@ export const launchServer = (): void => {
         console.log(`UserServer running at http://localhost:${PORT}`)
     })
 
-    process.on('SIGINT', () => {
-        userService.saveDataToFile();
+    process.on('SIGINT', async () => {
+        await userService.saveDataToFile();
         myLogger.log("Saving user data...");
         myLogger.saveToFile("Server shutdown by CTRL+C")
         process.exit();
